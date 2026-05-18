@@ -1,0 +1,22 @@
+[package]
+name = "ignite-ms-bench"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Benchmark tool for IgniteMS — measures raw embedding throughput"
+
+[features]
+default = ["native-trt"]
+native-trt = ["ignite-ms/native-trt"]
+
+[[bin]]
+name = "ignite-ms-bench"
+path = "src/main.rs"
+
+[dependencies]
+ignite-ms = { path = "../ignite-ms", default-features = false }
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"
+zstd = "0.13"
+crossbeam = "0.8"

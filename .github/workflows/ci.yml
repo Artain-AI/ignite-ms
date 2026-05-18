@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  python-lint:
+    name: Python syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check benchmark.py
+        run: python -m py_compile benchmark.py
+
+      - name: Check quickstart.py
+        run: python -m py_compile quickstart.py
+
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker build (syntax check only)
+        run: docker buildx build --check .
+
+  secret-scan:
+    name: Secret & leak scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for internal references
+        run: |
+          PATTERNS=(
+            "artain-apn-data"
+            "apn-bootstrap"
+            "apn-ec2-role"
+            "IAM_PROFILE"
+            "S3_BUCKET"
+            "GHCR_TOKEN"
+            "cli-primer"
+            "prototype/"
+            "scripts/launch"
+            "scripts/config"
+            "persona_id"
+            "boto3"
+          )
+          FOUND=false
+          for pattern in "${PATTERNS[@]}"; do
+            if grep -rn "$pattern" \
+              --include="*.rs" --include="*.py" --include="*.toml" --include="*.yml" --include="*.md" \
+              --exclude-dir=prototype --exclude-dir=docs --exclude-dir=scripts --exclude-dir=benchmarks \
+              . 2>/dev/null | grep -v ".github/workflows/ci.yml"; then
+              echo "LEAK: $pattern"
+              FOUND=true
+            fi
+          done
+          if [ "$FOUND" = true ]; then
+            echo "::error::Internal references found in public code"
+            exit 1
+          fi
