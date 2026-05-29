@@ -1,5 +1,8 @@
 # IgniteMS
 
+[![License](https://img.shields.io/github/license/Artain-AI/ignite-ms)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/Artain-AI/ignite-ms)](https://github.com/Artain-AI/ignite-ms/releases)
+
 253,000 msg/s on 8x A100. Up to 3x faster than Hugging Face TEI on same hardware.
 
 *357,893 msg/s sustained in production with workload-specific tuning.*
@@ -54,11 +57,11 @@ For cost context: at ~$12.68/hr p4d spot pricing, this production run cost about
 No single trick. Just removing waste everywhere:
 
 - **TensorRT** compiles kernels specific to the GPU architecture and batch shape. Not generic ONNX or PyTorch.
-- **Bucketed batching** groups texts by token length, reducing padding waste.
-- **CPU-side pipeline** keeps tokenization, batching, and GPU dispatch moving together.
+- **Bucketed batching** groups texts by token length so you're not padding a 6-token string to 512.
+- **CPU-side pipeline** keeps tokenization, batching, and GPU dispatch moving together without waiting on each other.
 - **Rust end-to-end.** No GIL, no Python request path, no HTTP serialization at runtime.
-- **Multi-GPU in one process.** One process can drive multiple GPUs with lock-free work distribution. No one-container-per-GPU serving stack.
-- **Engine caching.** TRT engines compile once and are reused until the model, runtime, or profile changes.
+- **Multi-GPU in one process.** Lock-free work stealing across GPUs. Most serving stacks run one container per GPU and glue them together with HTTP — we just don't.
+- **Engine caching.** TRT engines compile once and get reused until something actually changes (model, runtime version, or batch profile).
 
 ## Quickstart
 
