@@ -1,0 +1,21 @@
+[package]
+name = "ignite-ms"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "High-throughput semantic embedding engine with GPU-accelerated inference"
+
+[features]
+default = ["native-trt"]
+native-trt = []
+
+[dependencies]
+regex = "1"
+crossbeam = "0.8"
+tokenizers = "0.21"
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+
+[build-dependencies]
+cc = "1"
